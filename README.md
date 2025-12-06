@@ -16,8 +16,60 @@ A Python tool to automatically sync health metrics from Whoop API to your Obsidi
 
 - Python 3.11 or higher
 - [uv](https://github.com/astral-sh/uv) package manager
-- Whoop account with API access
+- **Whoop account** with API access (see setup below)
 - Obsidian vault
+
+## Getting Whoop API Access
+
+This tool includes a built-in OAuth 2.0 helper to make authentication easy:
+
+### Quick Start (Recommended)
+
+Run the authentication helper:
+
+```bash
+uv run python -m whoop_obsidian.auth_helper
+```
+
+This will:
+1. Open your browser for Whoop authentication
+2. Handle the OAuth 2.0 flow automatically
+3. Display your access token
+4. Show you how to export it as `WHOOP_API_TOKEN`
+
+### Manual Setup
+
+If you prefer to set up OAuth manually:
+
+1. **Create a Developer Account**
+   - Visit [WHOOP for Developers](https://developer.whoop.com/)
+   - Sign in with your Whoop account
+   - Navigate to the Developer Dashboard
+
+2. **Create an Application**
+   - Create a new application in the dashboard
+   - Set redirect URI to: `http://localhost:8000/callback`
+   - Note your Client ID and Client Secret
+
+3. **Get Your Access Token**
+   ```bash
+   uv run python -m whoop_obsidian.auth_helper \
+     --client-id YOUR_CLIENT_ID \
+     --client-secret YOUR_CLIENT_SECRET
+   ```
+
+4. **Set the Token**
+   ```bash
+   export WHOOP_API_TOKEN="your_access_token_here"
+   ```
+
+   Or save permanently:
+   ```bash
+   echo 'export WHOOP_API_TOKEN="your_token"' >> ~/.zshrc
+   source ~/.zshrc
+   ```
+
+For more details, see the [WHOOP API Documentation](https://developer.whoop.com/docs/developing/getting-started/).
 
 ## Installation
 
@@ -37,10 +89,7 @@ A Python tool to automatically sync health metrics from Whoop API to your Obsidi
    uv sync
    ```
 
-   This will:
-   - Create a `.venv` virtual environment automatically
-   - Install all dependencies from `uv.lock`
-   - Install the package in editable mode
+   This will install all dependencies from `uv.lock` and set up the package in editable mode.
 
 4. **Create configuration file**:
    ```bash
@@ -69,13 +118,6 @@ Run a one-time sync:
 
 ```bash
 uv run python -m whoop_obsidian
-```
-
-Or activate the environment first:
-
-```bash
-source .venv/bin/activate
-python -m whoop_obsidian
 ```
 
 Dry run (test without writing):

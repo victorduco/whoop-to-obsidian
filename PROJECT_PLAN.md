@@ -306,10 +306,9 @@ If some metrics missing from API response:
 
 ### Development Setup
 1. Install uv: `curl -LsSf https://astral.sh/uv/install.sh | sh`
-2. Create virtual environment: `uv venv`
-3. Install dependencies: `uv pip install -e ".[dev]"`
-4. Copy config: `cp config.example.yaml config.yaml`
-5. Set environment variable: `export WHOOP_API_TOKEN="your_token"`
+2. Install dependencies: `uv sync`
+3. Copy config: `cp config.example.yaml config.yaml`
+4. Set environment variable: `export WHOOP_API_TOKEN="your_token"`
 
 ### Testing Strategy
 - **Unit Tests**: Each module tested independently
@@ -321,9 +320,9 @@ If some metrics missing from API response:
 ### CLI Interface
 Manual execution supported via:
 ```bash
-python -m whoop_obsidian          # Run sync
-python -m whoop_obsidian --config custom.yaml  # Custom config
-python -m whoop_obsidian --dry-run  # Simulate without writing
+uv run python -m whoop_obsidian          # Run sync
+uv run python -m whoop_obsidian --config custom.yaml  # Custom config
+uv run python -m whoop_obsidian --dry-run  # Simulate without writing
 ```
 
 ## Implementation Notes

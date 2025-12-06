@@ -1,6 +1,8 @@
 # Whoop API Configuration
 whoop:
-  base_url: "https://api.whoop.com/v1"  # API endpoint base URL
+  # Note: base_url is hardcoded to https://api.prod.whoop.com/developer (Whoop API v2)
+  # This field is kept for backwards compatibility but is not used
+  base_url: "https://api.prod.whoop.com/developer"
   metrics:  # List of metrics to fetch (must not be empty)
     - sleep_score
     - sleep_duration

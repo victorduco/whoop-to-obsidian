@@ -9,7 +9,7 @@ from pathlib import Path
 class WhoopConfig(BaseModel):
     """Whoop API configuration."""
 
-    base_url: str = Field(default="https://api.whoop.com/v1")
+    base_url: str = Field(default="https://api.whoop.com/v2")
     metrics: list[str] = Field(min_length=1)
     timeout_seconds: int = Field(default=30, ge=1, le=300)
 
@@ -149,3 +149,97 @@ class WhoopMetrics(BaseModel):
     def get_metric(self, key: str) -> Optional[float]:
         """Get metric value by key."""
         return getattr(self, key, None)
+
+
+# Whoop API v2 Response Models
+
+
+class SleepScore(BaseModel):
+    """Whoop API v2 Sleep Score."""
+
+    stage_summary: Optional[dict[str, Any]] = None
+    sleep_needed: Optional[dict[str, Any]] = None
+    respiratory_rate: Optional[float] = None
+    sleep_performance_percentage: Optional[float] = None
+    sleep_consistency_percentage: Optional[float] = None
+    sleep_efficiency_percentage: Optional[float] = None
+
+
+class SleepActivity(BaseModel):
+    """Whoop API v2 Sleep Activity."""
+
+    id: str
+    user_id: Optional[str] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+    start: str
+    end: str
+    timezone_offset: Optional[str] = None
+    nap: bool = False
+    score_state: str
+    score: Optional[SleepScore] = None
+
+    def get_duration_hours(self) -> Optional[float]:
+        """Calculate sleep duration in hours."""
+        from datetime import datetime
+
+        try:
+            start_dt = datetime.fromisoformat(self.start.replace("Z", "+00:00"))
+            end_dt = datetime.fromisoformat(self.end.replace("Z", "+00:00"))
+            duration = (end_dt - start_dt).total_seconds() / 3600
+            return duration
+        except (ValueError, AttributeError):
+            return None
+
+
+class RecoveryScore(BaseModel):
+    """Whoop API v2 Recovery Score."""
+
+    user_calibrating: bool = False
+    recovery_score: Optional[float] = None
+    resting_heart_rate: Optional[float] = None
+    hrv_rmssd_milli: Optional[float] = None
+    spo2_percentage: Optional[float] = None
+    skin_temp_celsius: Optional[float] = None
+
+
+class Recovery(BaseModel):
+    """Whoop API v2 Recovery."""
+
+    cycle_id: str
+    sleep_id: str
+    user_id: Optional[str] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+    score_state: str
+    score: Optional[RecoveryScore] = None
+
+
+class CycleScore(BaseModel):
+    """Whoop API v2 Cycle Score."""
+
+    strain: Optional[float] = None
+    kilojoule: Optional[float] = None
+    average_heart_rate: Optional[int] = None
+    max_heart_rate: Optional[int] = None
+
+
+class Cycle(BaseModel):
+    """Whoop API v2 Physiological Cycle."""
+
+    id: str
+    user_id: Optional[str] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+    start: str
+    end: Optional[str] = None
+    timezone_offset: Optional[str] = None
+    score_state: str
+    score: Optional[CycleScore] = None
+
+
+class WhoopCollectionResponse(BaseModel):
+    """Generic Whoop API v2 collection response with pagination."""
+
+    records: list[Any] = Field(default_factory=list)
+    next_token: Optional[str] = None

@@ -1,0 +1,75 @@
+# Whoop API Configuration
+whoop:
+  base_url: "https://api.whoop.com/v1"  # API endpoint base URL
+  metrics:  # List of metrics to fetch (must not be empty)
+    - sleep_score
+    - sleep_duration
+    - recovery_score
+    - strain_score
+    - hrv
+  timeout_seconds: 30
+
+# Obsidian Integration
+obsidian:
+  vault_path: "/absolute/path/to/vault"  # Must be absolute path
+  file_prefix: "health"  # No special chars allowed (validated: alphanumeric, dash, underscore)
+
+# Table Structure
+table:
+  date_format: "MM/DD"  # Format for date column
+  columns:  # Column definitions in display order
+    - name: "Date"
+      type: "date"
+    - name: "Sleep Score"
+      type: "metric"
+      metric_key: "sleep_score"
+    - name: "Sleep (hrs)"
+      type: "metric"
+      metric_key: "sleep_duration"
+      decimal_places: 1
+    - name: "Recovery"
+      type: "metric"
+      metric_key: "recovery_score"
+    - name: "Strain"
+      type: "metric"
+      metric_key: "strain_score"
+      decimal_places: 1
+    - name: "HRV"
+      type: "metric"
+      metric_key: "hrv"
+    - name: "Notes"
+      type: "custom"  # Empty for manual entry
+
+  alignment: "left"  # Markdown table alignment: left, center, or right
+
+# Color Thresholds (for future dashboard/reporting features)
+# Not rendered in markdown files, stored for potential extensions
+thresholds:
+  sleep_score:
+    green: [85, 100]
+    yellow: [70, 84]
+    red: [0, 69]
+  recovery_score:
+    green: [67, 100]
+    yellow: [34, 66]
+    red: [0, 33]
+  strain_score:
+    green: [0, 14]
+    yellow: [15, 18]
+    red: [19, 21]
+
+# Scheduling
+schedule:
+  run_time: "11:00"  # Time in HH:MM format (24-hour, local timezone)
+
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: "logs/whoop_sync.log"  # Relative to project root
+  rotation: true  # Enable log rotation (max 10MB, 5 backups)
+
+# Execution
+execution:
+  timezone: "local"  # Use system local timezone
+  allow_historical: false  # If true, process data even if from previous months
+  deduplication: true  # Check for existing date entry before appending

@@ -3,6 +3,7 @@
 ## Проблема: redirect_uri не совпадает
 
 Если вы видите ошибку:
+
 ```
 Error: invalid_request
 Description: The "redirect_uri" parameter does not match...
@@ -37,6 +38,7 @@ uv run python -m whoop_obsidian.auth_helper
 ```
 
 Это должно:
+
 1. Открыть браузер
 2. Попросить вас войти в Whoop
 3. Запросить разрешения
@@ -57,11 +59,13 @@ uv run python -m whoop_obsidian.auth_helper
 ### Вариант 2: Вручную через OAuth Flow
 
 1. Откройте в браузере (замените YOUR_CLIENT_ID на ваш Client ID):
+
 ```
 https://api.prod.whoop.com/oauth/oauth2/auth?client_id=YOUR_CLIENT_ID&response_type=code&redirect_uri=http://localhost:8000/callback&scope=read:recovery+read:cycles+read:sleep+read:workout+read:profile+read:body_measurement
 ```
 
 2. После авторизации вас перенаправит на URL вида:
+
 ```
 http://localhost:8000/callback?code=AUTHORIZATION_CODE
 ```
@@ -69,6 +73,7 @@ http://localhost:8000/callback?code=AUTHORIZATION_CODE
 3. Скопируйте `AUTHORIZATION_CODE` из URL
 
 4. Обменяйте код на токен (замените YOUR_CLIENT_ID, YOUR_CLIENT_SECRET и AUTHORIZATION_CODE):
+
 ```bash
 curl -X POST https://api.prod.whoop.com/oauth/oauth2/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
@@ -80,6 +85,7 @@ curl -X POST https://api.prod.whoop.com/oauth/oauth2/token \
 ```
 
 5. Ответ будет содержать `access_token`:
+
 ```json
 {
   "access_token": "eyJ...",
@@ -90,6 +96,7 @@ curl -X POST https://api.prod.whoop.com/oauth/oauth2/token \
 ```
 
 6. Экспортируйте токен:
+
 ```bash
 export WHOOP_API_TOKEN="access_token_из_ответа"
 ```
@@ -111,6 +118,7 @@ uv run python test_api.py
 ## Troubleshooting
 
 ### Токен истёк
+
 Токены Whoop обычно действуют 1 час. Используйте refresh_token для получения нового:
 
 ```python
@@ -121,11 +129,13 @@ new_token = oauth.refresh_access_token(refresh_token)
 ```
 
 ### Ошибка 401 Unauthorized
+
 - Проверьте что токен правильно экспортирован
 - Проверьте что токен не истёк
 - Получите новый токен
 
 ### Нет данных
+
 - Убедитесь что у вас есть данные в Whoop за последние дни
 - Проверьте что вы носите Whoop strap
 - Данные могут появляться с задержкой

@@ -20,11 +20,13 @@ Description: The "redirect_uri" parameter does not match...
 
 ### Шаг 2: Настройте приложение
 
-1. Найдите ваше приложение (с Client ID: `8b1dd617-41e6-4e3a-bca3-9a9c072460de`)
+1. Найдите ваше приложение в списке
 2. Нажмите "Edit" или "Settings"
 3. Найдите секцию "Redirect URIs" или "OAuth 2.0 Redirect URLs"
 4. Добавьте: `http://localhost:8000/callback`
 5. Сохраните изменения
+
+**Примечание:** Client ID и Client Secret держите в секрете и не публикуйте в открытый доступ!
 
 ### Шаг 3: Запустите авторизацию
 
@@ -54,9 +56,9 @@ uv run python -m whoop_obsidian.auth_helper
 
 ### Вариант 2: Вручную через OAuth Flow
 
-1. Откройте в браузере:
+1. Откройте в браузере (замените YOUR_CLIENT_ID на ваш Client ID):
 ```
-https://api.prod.whoop.com/oauth/oauth2/auth?client_id=8b1dd617-41e6-4e3a-bca3-9a9c072460de&response_type=code&redirect_uri=http://localhost:8000/callback&scope=read:recovery+read:cycles+read:sleep+read:workout+read:profile+read:body_measurement
+https://api.prod.whoop.com/oauth/oauth2/auth?client_id=YOUR_CLIENT_ID&response_type=code&redirect_uri=http://localhost:8000/callback&scope=read:recovery+read:cycles+read:sleep+read:workout+read:profile+read:body_measurement
 ```
 
 2. После авторизации вас перенаправит на URL вида:
@@ -66,14 +68,14 @@ http://localhost:8000/callback?code=AUTHORIZATION_CODE
 
 3. Скопируйте `AUTHORIZATION_CODE` из URL
 
-4. Обменяйте код на токен:
+4. Обменяйте код на токен (замените YOUR_CLIENT_ID, YOUR_CLIENT_SECRET и AUTHORIZATION_CODE):
 ```bash
 curl -X POST https://api.prod.whoop.com/oauth/oauth2/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=authorization_code" \
   -d "code=AUTHORIZATION_CODE" \
-  -d "client_id=8b1dd617-41e6-4e3a-bca3-9a9c072460de" \
-  -d "client_secret=d221daaa4edeede3bab128edf65a5e72816a4c1ed9ab48cda4421127c70fb646" \
+  -d "client_id=YOUR_CLIENT_ID" \
+  -d "client_secret=YOUR_CLIENT_SECRET" \
   -d "redirect_uri=http://localhost:8000/callback"
 ```
 

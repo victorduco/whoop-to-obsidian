@@ -27,9 +27,9 @@ class TemplateGenerator:
             year: Year as integer.
 
         Returns:
-            Markdown header string.
+            Empty string (header removed, filename contains the info).
         """
-        return f"# Health Metrics - {month} {year}\n\n"
+        return ""
 
     def generate_table_header(self) -> str:
         """
@@ -39,28 +39,19 @@ class TemplateGenerator:
             Markdown table header string (header + separator lines).
         """
         columns = self.table_config.columns
-
-        # Generate column names row
         header_row = "| " + " | ".join(col.name for col in columns) + " |"
-
-        # Generate separator row with alignment
         separators = []
         for col in columns:
-            # Match separator length to column name length
             sep_len = len(col.name)
             if self.table_config.alignment == "left":
                 separators.append("-" * sep_len)
             elif self.table_config.alignment == "center":
-                # Center alignment: :---:
                 separators.append(":" + "-" * (sep_len - 2) + ":")
             elif self.table_config.alignment == "right":
-                # Right alignment: ----:
                 separators.append("-" * (sep_len - 1) + ":")
             else:
                 separators.append("-" * sep_len)
-
         separator_row = "|" + "|".join(separators) + "|"
-
         return f"{header_row}\n{separator_row}\n"
 
     def generate_empty_file(self, month: str, year: int) -> str:

@@ -42,6 +42,7 @@ logs/
 
 # Configuration (secrets)
 config.yaml
+.whoop_api_token
 
 # Lock file
 .whoop_sync.lock

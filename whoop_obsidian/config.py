@@ -78,8 +78,13 @@ def get_api_token() -> str:
     """
     token = os.environ.get("WHOOP_API_TOKEN")
     if not token:
+        # Попробовать прочитать из файла .whoop_api_token
+        token_path = Path(".whoop_api_token")
+        if token_path.exists():
+            token = token_path.read_text(encoding="utf-8").strip()
+    if not token:
         raise ConfigValidationError(
-            "WHOOP_API_TOKEN environment variable is not set.\n"
-            "Please export WHOOP_API_TOKEN with your Whoop API bearer token."
+            "WHOOP_API_TOKEN environment variable is not set and .whoop_api_token file not found.\n"
+            "Please export WHOOP_API_TOKEN or create .whoop_api_token file with your Whoop API bearer token."
         )
     return token

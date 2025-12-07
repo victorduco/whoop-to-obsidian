@@ -55,7 +55,8 @@ class ObsidianWriter:
             date = datetime.now()
 
         month_name = date.strftime("%B")  # Full month name (e.g., "December")
-        filename = f"{self.file_prefix}-{month_name}.md"
+        year = date.year
+        filename = f"Health Metrics - {month_name} {year}.md"
         return self.vault_path / filename
 
     def ensure_file_exists(self, file_path: Path, date: datetime) -> None:
@@ -108,67 +109,140 @@ class ObsidianWriter:
         self, metrics: WhoopMetrics, date: Optional[datetime] = None
     ) -> None:
         """
-        Append metrics row to monthly file.
-
-        Args:
-            metrics: Metrics data to append.
-            date: Date for the entry (defaults to today).
-
-        Raises:
-            DuplicateEntryError: If entry already exists and deduplication is enabled.
-            TableFormatError: If table structure is invalid.
+        Append metrics row to monthly file. Также добавляет пропущенные дни месяца.
         """
+        from calendar import monthrange
         if date is None:
             date = datetime.now()
-
         file_path = self.get_month_file_path(date)
-
-        # Ensure file exists
         self.ensure_file_exists(file_path, date)
-
-        # Check for duplicates if deduplication is enabled
+        
+        # Заполняем пропущенные дни
+        year, month = date.year, date.month
+        num_days = monthrange(year, month)[1]
+        existing_dates = set()
+        if file_path.exists():
+            content = file_path.read_text(encoding="utf-8")
+            for line in content.splitlines():
+                if line.startswith("|"):
+                    parts = line.split("|")
+                    if len(parts) > 1:
+                        existing_dates.add(parts[1].strip())
+        from whoop_obsidian.config import get_api_token
+        from whoop_obsidian.whoop_client import WhoopClient
+        api_token = get_api_token()
+        whoop_client = WhoopClient(self.config.whoop, api_token)
+        for day in range(1, date.day):
+            date_obj = datetime(year, month, day)
+            date_str = self.template_generator.format_date(date_obj)
+            if date_str not in existing_dates:
+                logger.info(f"Fetching metrics for {date_str}")
+                past_metrics = self._fetch_metrics_for_date(whoop_client, date_obj)
+                row = self._generate_table_row(past_metrics, date_obj)
+                self._append_row_atomic(file_path, row)
+        
+        # Проверка на дубликаты для текущей даты
         if self.config.execution.deduplication:
             if self.check_duplicate_entry(file_path, date):
                 raise DuplicateEntryError(
                     f"Entry for {date.strftime('%Y-%m-%d')} already exists in {file_path.name}"
                 )
-
-        # Generate table row
+        
+        # Генерация и добавление строки для текущей даты
         row = self._generate_table_row(metrics, date)
-
-        # Append to file using atomic write
         self._append_row_atomic(file_path, row)
-
         logger.info(f"Appended metrics for {date.strftime('%Y-%m-%d')} to {file_path.name}")
+
+    def _fetch_metrics_for_date(self, whoop_client, date_obj):
+        """
+        Получить метрики за конкретный день через WhoopClient.
+        """
+        from datetime import timedelta
+        start_of_day = date_obj.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_of_day = start_of_day + timedelta(days=1)
+        start_iso = start_of_day.isoformat() + "Z"
+        end_iso = end_of_day.isoformat() + "Z"
+        try:
+            metrics = whoop_client.fetch_metrics_for_range(start_iso, end_iso)
+            return metrics
+        except Exception:
+            return WhoopMetrics()
+
+    def _add_color_indicator(self, value: float, metric_key: str) -> str:
+        """
+        Add color emoji indicator based on threshold ranges.
+        
+        Args:
+            value: Metric value
+            metric_key: Key to identify which thresholds to use
+            
+        Returns:
+            Emoji indicator (🟢 green, 🟡 yellow, 🔴 red)
+        """
+        # Thresholds based on PROJECT_PLAN.md
+        thresholds = {
+            "sleep_score": {"green": (85, 100), "yellow": (70, 84), "red": (0, 69)},
+            "recovery_score": {"green": (67, 100), "yellow": (34, 66), "red": (0, 33)},
+            "strain_score": {"green": (0, 14), "yellow": (15, 18), "red": (19, 21)},
+        }
+        
+        if metric_key not in thresholds:
+            return ""
+        
+        ranges = thresholds[metric_key]
+        
+        if ranges["green"][0] <= value <= ranges["green"][1]:
+            return "🟢"
+        elif ranges["yellow"][0] <= value <= ranges["yellow"][1]:
+            return "🟡"
+        elif ranges["red"][0] <= value <= ranges["red"][1]:
+            return "🔴"
+        
+        return ""
 
     def _generate_table_row(self, metrics: WhoopMetrics, date: datetime) -> str:
         """
-        Generate markdown table row from metrics.
-
-        Args:
-            metrics: Metrics data.
-            date: Date for the entry.
-
-        Returns:
-            Formatted table row string.
+        Generate markdown table row from metrics, поддержка custom_sleep.
         """
         cells = []
-
         for column in self.config.table.columns:
             if column.type == "date":
                 cell_value = self.template_generator.format_date(date)
+            elif column.type == "custom_sleep":
+                score = metrics.sleep_score if metrics.sleep_score is not None else ""
+                # Use sleep_duration_minutes (actual sleep time) instead of total time in bed
+                duration_minutes = metrics.sleep_duration_minutes if metrics.sleep_duration_minutes is not None else None
+                
+                if score != "" and duration_minutes is not None:
+                    # Format as HH:MM with color indicator
+                    hours = duration_minutes // 60
+                    minutes = duration_minutes % 60
+                    color = self._add_color_indicator(score, "sleep_score")
+                    cell_value = f"{color} {int(round(score))} ({hours}:{minutes:02d})" if color else f"{int(round(score))} ({hours}:{minutes:02d})"
+                elif score != "":
+                    color = self._add_color_indicator(score, "sleep_score")
+                    cell_value = f"{color} {int(round(score))}" if color else f"{int(round(score))}"
+                elif duration_minutes is not None:
+                    hours = duration_minutes // 60
+                    minutes = duration_minutes % 60
+                    cell_value = f"({hours}:{minutes:02d})"
+                else:
+                    cell_value = ""
             elif column.type == "metric":
                 metric_value = metrics.get_metric(column.metric_key)
-                cell_value = self.template_generator.format_metric_value(
-                    metric_value, column.decimal_places
-                )
+                if metric_value is not None:
+                    color = self._add_color_indicator(metric_value, column.metric_key)
+                    formatted_value = self.template_generator.format_metric_value(
+                        metric_value, column.decimal_places
+                    )
+                    cell_value = f"{color} {formatted_value}" if color else formatted_value
+                else:
+                    cell_value = ""
             elif column.type == "custom":
                 cell_value = ""
             else:
                 cell_value = ""
-
             cells.append(cell_value)
-
         return "| " + " | ".join(cells) + " |"
 
     def _append_row_atomic(self, file_path: Path, row: str) -> None:

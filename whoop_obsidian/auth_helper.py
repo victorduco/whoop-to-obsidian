@@ -45,12 +45,16 @@ Examples:
 
     args = parser.parse_args()
 
-    # Default credentials (you can change these)
-    client_id = args.client_id or "8b1dd617-41e6-4e3a-bca3-9a9c072460de"
-    client_secret = (
-        args.client_secret
-        or "d221daaa4edeede3bab128edf65a5e72816a4c1ed9ab48cda4421127c70fb646"
-    )
+    # Get credentials from environment variables or command line
+    client_id = args.client_id or os.environ.get("WHOOP_CLIENT_ID")
+    client_secret = args.client_secret or os.environ.get("WHOOP_CLIENT_SECRET")
+    
+    if not client_id or not client_secret:
+        print("Error: OAuth credentials not provided.", file=sys.stderr)
+        print("\nPlease provide credentials via:", file=sys.stderr)
+        print("  1. Command line: --client-id YOUR_ID --client-secret YOUR_SECRET", file=sys.stderr)
+        print("  2. Environment variables: WHOOP_CLIENT_ID and WHOOP_CLIENT_SECRET", file=sys.stderr)
+        return 1
 
     try:
         # Perform OAuth flow
@@ -73,6 +77,13 @@ Examples:
         print(f"\n  export WHOOP_API_TOKEN='{token_data['access_token']}'")
         print("\nOr add to your shell profile (~/.zshrc or ~/.bashrc):")
         print(f"\n  echo 'export WHOOP_API_TOKEN=\"{token_data['access_token']}\"' >> ~/.zshrc")
+        # Сохраняем токен в .whoop_api_token
+        try:
+            with open(".whoop_api_token", "w", encoding="utf-8") as f:
+                f.write(token_data['access_token'].strip() + "\n")
+            print("\n✓ Token saved to .whoop_api_token\n")
+        except Exception as e:
+            print(f"\n⚠ Could not save token to .whoop_api_token: {e}\n")
 
         # Save to file if requested
         if args.save_token:

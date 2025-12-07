@@ -21,7 +21,60 @@ logger = logging.getLogger(__name__)
 
 
 class WhoopClient:
-    """Client for interacting with Whoop API v2."""
+    def fetch_metrics_for_range(self, start_iso, end_iso, is_today=False) -> WhoopMetrics:
+        """
+        Fetch metrics for a specific date range (one day).
+        
+        Args:
+            start_iso: Start of date range in ISO format
+            end_iso: End of date range in ISO format
+            is_today: If True, skip fetching strain (as it's still being accumulated)
+        """
+        metrics_data = {}
+        # Fetch sleep data
+        sleep_activities = self.get_sleep_collection(start=start_iso, end=end_iso, limit=10)
+        if sleep_activities:
+            main_sleep = None
+            for sleep in sleep_activities:
+                if not sleep.nap and sleep.score_state == "SCORED":
+                    main_sleep = sleep
+                    break
+            if main_sleep:
+                duration = main_sleep.get_duration_hours()
+                if duration is not None:
+                    metrics_data["sleep_duration"] = duration
+                # Get actual sleep time in minutes (excluding awake)
+                sleep_minutes = main_sleep.get_actual_sleep_duration_minutes()
+                if sleep_minutes is not None:
+                    metrics_data["sleep_duration_minutes"] = sleep_minutes
+                if main_sleep.score and main_sleep.score.sleep_performance_percentage:
+                    metrics_data["sleep_score"] = main_sleep.score.sleep_performance_percentage
+        # Fetch recovery data
+        recoveries = self.get_recovery_collection(start=start_iso, end=end_iso, limit=10)
+        if recoveries:
+            latest_recovery = None
+            for recovery in recoveries:
+                if recovery.score_state == "SCORED":
+                    latest_recovery = recovery
+                    break
+            if latest_recovery and latest_recovery.score:
+                score = latest_recovery.score
+                if score.recovery_score is not None:
+                    metrics_data["recovery_score"] = score.recovery_score
+        # Fetch cycle data for strain (skip for today as it's still accumulating)
+        if not is_today:
+            cycles = self.get_cycle_collection(start=start_iso, end=end_iso, limit=10)
+            if cycles:
+                latest_cycle = None
+                for cycle in cycles:
+                    if cycle.score_state == "SCORED":
+                        latest_cycle = cycle
+                        break
+                if latest_cycle and latest_cycle.score:
+                    if latest_cycle.score.strain is not None:
+                        metrics_data["strain_score"] = latest_cycle.score.strain
+        metrics_data["timestamp"] = start_iso
+        return WhoopMetrics(**metrics_data)
 
     def __init__(self, config: WhoopConfig, api_token: str):
         """
@@ -249,6 +302,11 @@ class WhoopClient:
                     if duration is not None:
                         metrics_data["sleep_duration"] = duration
 
+                    # Get actual sleep time in minutes (excluding awake)
+                    sleep_minutes = main_sleep.get_actual_sleep_duration_minutes()
+                    if sleep_minutes is not None:
+                        metrics_data["sleep_duration_minutes"] = sleep_minutes
+
                     if main_sleep.score and main_sleep.score.sleep_performance_percentage:
                         metrics_data["sleep_score"] = (
                             main_sleep.score.sleep_performance_percentage
@@ -274,20 +332,8 @@ class WhoopClient:
                     if score.hrv_rmssd_milli is not None:
                         metrics_data["hrv"] = score.hrv_rmssd_milli
 
-            # Fetch cycle data for strain
-            cycles = self.get_cycle_collection(start=start_iso, end=end_iso, limit=10)
-
-            if cycles:
-                # Get most recent cycle
-                latest_cycle = None
-                for cycle in cycles:
-                    if cycle.score_state == "SCORED":
-                        latest_cycle = cycle
-                        break
-
-                if latest_cycle and latest_cycle.score:
-                    if latest_cycle.score.strain is not None:
-                        metrics_data["strain_score"] = latest_cycle.score.strain
+            # Skip strain for today - it's still accumulating throughout the day
+            # Strain will be available as final score tomorrow
 
             # Set timestamp
             metrics_data["timestamp"] = today.isoformat()

@@ -151,8 +151,6 @@ def main() -> int:
 
         # Get API token
         api_token = get_api_token()
-
-        # Initialize clients
         whoop_client = WhoopClient(config.whoop, api_token)
         obsidian_writer = ObsidianWriter(config)
 

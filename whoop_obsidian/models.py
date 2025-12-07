@@ -52,7 +52,7 @@ class TableColumn(BaseModel):
     """Configuration for a single table column."""
 
     name: str
-    type: Literal["date", "metric", "custom"]
+    type: Literal["date", "metric", "custom", "custom_sleep"]
     metric_key: Optional[str] = None
     decimal_places: int = Field(default=0, ge=0, le=5)
 
@@ -141,6 +141,7 @@ class WhoopMetrics(BaseModel):
 
     sleep_score: Optional[float] = None
     sleep_duration: Optional[float] = None
+    sleep_duration_minutes: Optional[int] = None  # Actual sleep time in minutes (excluding awake)
     recovery_score: Optional[float] = None
     strain_score: Optional[float] = None
     hrv: Optional[float] = None
@@ -169,7 +170,7 @@ class SleepActivity(BaseModel):
     """Whoop API v2 Sleep Activity."""
 
     id: str
-    user_id: Optional[str] = None
+    user_id: Optional[str | int] = None
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
     start: str
@@ -191,6 +192,24 @@ class SleepActivity(BaseModel):
         except (ValueError, AttributeError):
             return None
 
+    def get_actual_sleep_duration_minutes(self) -> Optional[int]:
+        """Calculate actual sleep duration in minutes (excluding awake time)."""
+        if not self.score or not self.score.stage_summary:
+            return None
+        
+        try:
+            stage_summary = self.score.stage_summary
+            # Sum up actual sleep stages (light + slow wave + REM)
+            total_sleep_milli = (
+                stage_summary.get('total_light_sleep_time_milli', 0) +
+                stage_summary.get('total_slow_wave_sleep_time_milli', 0) +
+                stage_summary.get('total_rem_sleep_time_milli', 0)
+            )
+            # Convert milliseconds to minutes
+            return int(total_sleep_milli / 60000)
+        except (ValueError, AttributeError, TypeError):
+            return None
+
 
 class RecoveryScore(BaseModel):
     """Whoop API v2 Recovery Score."""
@@ -206,9 +225,9 @@ class RecoveryScore(BaseModel):
 class Recovery(BaseModel):
     """Whoop API v2 Recovery."""
 
-    cycle_id: str
-    sleep_id: str
-    user_id: Optional[str] = None
+    cycle_id: str | int
+    sleep_id: str | int
+    user_id: Optional[str | int] = None
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
     score_state: str
@@ -227,8 +246,8 @@ class CycleScore(BaseModel):
 class Cycle(BaseModel):
     """Whoop API v2 Physiological Cycle."""
 
-    id: str
-    user_id: Optional[str] = None
+    id: str | int
+    user_id: Optional[str | int] = None
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
     start: str

@@ -139,8 +139,9 @@ class TestGetApiToken:
         token = get_api_token()
         assert token == "test_token_123"
 
-    def test_get_token_missing_raises_error(self, monkeypatch):
+    def test_get_token_missing_raises_error(self, monkeypatch, tmp_path):
         """Test that missing token raises error."""
         monkeypatch.delenv("WHOOP_API_TOKEN", raising=False)
+        monkeypatch.chdir(tmp_path)  # Change to temp dir where .whoop_api_token doesn't exist
         with pytest.raises(ConfigValidationError, match="WHOOP_API_TOKEN"):
             get_api_token()

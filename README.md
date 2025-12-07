@@ -32,6 +32,7 @@ uv run python -m whoop_obsidian.auth_helper
 ```
 
 This will:
+
 1. Open your browser for Whoop authentication
 2. Handle the OAuth 2.0 flow automatically
 3. Display your access token
@@ -42,16 +43,19 @@ This will:
 If you prefer to set up OAuth manually:
 
 1. **Create a Developer Account**
+
    - Visit [WHOOP for Developers](https://developer.whoop.com/)
    - Sign in with your Whoop account
    - Navigate to the Developer Dashboard
 
 2. **Create an Application**
+
    - Create a new application in the dashboard
    - Set redirect URI to: `http://localhost:8000/callback`
    - Note your Client ID and Client Secret
 
 3. **Get Your Access Token**
+
    ```bash
    uv run python -m whoop_obsidian.auth_helper \
      --client-id YOUR_CLIENT_ID \
@@ -59,11 +63,13 @@ If you prefer to set up OAuth manually:
    ```
 
 4. **Set the Token**
+
    ```bash
    export WHOOP_API_TOKEN="your_access_token_here"
    ```
 
    Or save permanently:
+
    ```bash
    echo 'export WHOOP_API_TOKEN="your_token"' >> ~/.zshrc
    source ~/.zshrc
@@ -74,17 +80,20 @@ For more details, see the [WHOOP API Documentation](https://developer.whoop.com/
 ## Installation
 
 1. **Install uv** (if not already installed):
+
    ```bash
    curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
 
 2. **Clone the repository**:
+
    ```bash
    git clone https://github.com/yourusername/whoop-to-obsidian.git
    cd whoop-to-obsidian
    ```
 
 3. **Install dependencies using uv**:
+
    ```bash
    uv sync
    ```
@@ -92,20 +101,24 @@ For more details, see the [WHOOP API Documentation](https://developer.whoop.com/
    This will install all dependencies from `uv.lock` and set up the package in editable mode.
 
 4. **Create configuration file**:
+
    ```bash
    cp config.example.yaml config.yaml
    ```
 
 5. **Edit config.yaml**:
+
    - Set `obsidian.vault_path` to your Obsidian vault directory (absolute path)
    - Customize metrics, table structure, and other settings as needed
 
 6. **Set Whoop API token**:
+
    ```bash
    export WHOOP_API_TOKEN="your_whoop_api_token_here"
    ```
 
    Add this to your shell profile (~/.zshrc or ~/.bashrc) to persist:
+
    ```bash
    echo 'export WHOOP_API_TOKEN="your_token"' >> ~/.zshrc
    ```
@@ -121,30 +134,35 @@ Set up automatic daily sync at the time specified in your config.yaml:
 ```
 
 This will:
+
 - Create a launchd service that runs daily at the configured time
 - Set up logging to `logs/scheduler.log`
 
 **Scheduler Management:**
 
 Check scheduler status:
+
 ```bash
 uv run python update_schedule.py status
 ```
 
 Update schedule after changing config.yaml:
+
 ```bash
 uv run python update_schedule.py install
 ```
 
 Remove scheduler:
+
 ```bash
 uv run python update_schedule.py uninstall
 ```
 
 The sync time is configured in `config.yaml` under `schedule.run_time` (24-hour format):
+
 ```yaml
 schedule:
-  run_time: "11:00"  # Runs daily at 11:00 AM
+  run_time: "11:00" # Runs daily at 11:00 AM
 ```
 
 ### Manual Sync
@@ -180,10 +198,10 @@ The tool creates monthly files in your vault like:
 ```markdown
 # Health Metrics - December 2025
 
-| Date | Sleep Score | Sleep (hrs) | Recovery | Strain | HRV | Notes |
-|------|-------------|-------------|----------|--------|-----|-------|
-| 12/01 | 85 | 7.5 | 72 | 12.3 | 65 | |
-| 12/02 | 78 | 6.8 | 68 | 14.1 | 58 | Added evening workout |
+| Date  | Sleep Score | Sleep (hrs) | Recovery | Strain | HRV | Notes                 |
+| ----- | ----------- | ----------- | -------- | ------ | --- | --------------------- |
+| 12/01 | 85          | 7.5         | 72       | 12.3   | 65  |                       |
+| 12/02 | 78          | 6.8         | 68       | 14.1   | 58  | Added evening workout |
 ```
 
 ## Configuration
@@ -257,30 +275,35 @@ whoop-to-obsidian/
 ### Configuration Error
 
 If you see "Configuration file not found":
+
 - Ensure `config.yaml` exists in the project root
 - Or set `WHOOP_CONFIG_PATH` environment variable
 
 ### Vault Not Found
 
 If you see "Obsidian vault not found":
+
 - Check that `obsidian.vault_path` in config.yaml is an absolute path
 - Verify the directory exists
 
 ### API Authentication Failed
 
 If you see "Authentication failed":
+
 - Verify your `WHOOP_API_TOKEN` is correctly set
 - Check that the token is valid and not expired
 
 ### Duplicate Entry
 
 If you see "Entry already exists":
+
 - This is normal if you run the tool multiple times per day
 - Disable deduplication in config if you want to allow duplicates
 
 ### Scheduler Not Running
 
 If automatic sync is not working:
+
 - Check scheduler status: `python update_schedule.py status`
 - View scheduler logs: `cat logs/scheduler.log`
 - Reinstall scheduler: `./install_scheduler.sh`

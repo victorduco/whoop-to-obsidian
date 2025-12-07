@@ -112,12 +112,53 @@ For more details, see the [WHOOP API Documentation](https://developer.whoop.com/
 
 ## Usage
 
+### Automatic Scheduling (Recommended)
+
+Set up automatic daily sync at the time specified in your config.yaml:
+
+```bash
+./install_scheduler.sh
+```
+
+This will:
+- Create a launchd service that runs daily at the configured time
+- Set up logging to `logs/scheduler.log`
+
+**Scheduler Management:**
+
+Check scheduler status:
+```bash
+uv run python update_schedule.py status
+```
+
+Update schedule after changing config.yaml:
+```bash
+uv run python update_schedule.py install
+```
+
+Remove scheduler:
+```bash
+uv run python update_schedule.py uninstall
+```
+
+The sync time is configured in `config.yaml` under `schedule.run_time` (24-hour format):
+```yaml
+schedule:
+  run_time: "11:00"  # Runs daily at 11:00 AM
+```
+
 ### Manual Sync
 
 Run a one-time sync:
 
 ```bash
 uv run python -m whoop_obsidian
+```
+
+Or use the wrapper script:
+
+```bash
+./sync_whoop.sh
 ```
 
 Dry run (test without writing):
@@ -155,6 +196,7 @@ Key settings:
 - **obsidian.vault_path**: Absolute path to your Obsidian vault
 - **obsidian.file_prefix**: Prefix for monthly files (e.g., "health")
 - **table.columns**: Define table structure and column order
+- **schedule.run_time**: Time to run daily sync (HH:MM, 24-hour format)
 - **execution.deduplication**: Prevent duplicate entries (default: true)
 - **logging.level**: Set logging verbosity (DEBUG, INFO, WARNING, ERROR)
 
@@ -201,6 +243,9 @@ whoop-to-obsidian/
 │   └── exceptions.py         # Custom exceptions
 ├── tests/                    # Test suite
 ├── logs/                     # Log files (gitignored)
+├── sync_whoop.sh             # Wrapper script for scheduled runs
+├── update_schedule.py        # Scheduler management script
+├── install_scheduler.sh      # Scheduler installation script
 ├── config.yaml               # Your config (gitignored)
 ├── config.example.yaml       # Example configuration
 ├── pyproject.toml            # Dependencies
@@ -232,6 +277,14 @@ If you see "Authentication failed":
 If you see "Entry already exists":
 - This is normal if you run the tool multiple times per day
 - Disable deduplication in config if you want to allow duplicates
+
+### Scheduler Not Running
+
+If automatic sync is not working:
+- Check scheduler status: `python update_schedule.py status`
+- View scheduler logs: `cat logs/scheduler.log`
+- Reinstall scheduler: `./install_scheduler.sh`
+- Verify time in config.yaml is correct
 
 ## License
 

@@ -11,6 +11,11 @@ cd "$SCRIPT_DIR" || exit 1
 # Set up Python environment
 export PYTHONUNBUFFERED=1
 
+# Load API token from file if exists and not already set
+if [ -z "$WHOOP_API_TOKEN" ] && [ -f "$SCRIPT_DIR/.whoop_api_token" ]; then
+    export WHOOP_API_TOKEN=$(cat "$SCRIPT_DIR/.whoop_api_token")
+fi
+
 # Run the sync using uv
 uv run python -m whoop_obsidian
 
